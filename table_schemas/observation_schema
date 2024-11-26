@@ -1,0 +1,15 @@
+OBSERVATION
+resource.resourceType = "Observation"
+resource.id
+resource.status
+resource.category - array
+    coding - array
+        system, code, display
+resource.code.coding - array
+    system, code, display
+resource.subject.reference
+resource.encounter.reference
+resource.effectiveDateTime
+resource.issued
+resource.valueQuantity
+    value, unit, system, code

@@ -1,0 +1,10 @@
+IMMUNIZATION
+resource.resourceType = "Immunization"
+resource.id (immunization id)
+resource.status
+resource.vaccineCode.coding - array
+    system, code, display
+resource.patient.reference
+resource.encounter.reference
+resource.occurrenceDateTime
+resource.primarySource

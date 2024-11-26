@@ -1,0 +1,47 @@
+{
+  "fullUrl": "urn:uuid:883bb812-ced6-9f57-46d3-7400f3a7565e",
+  "resource": {
+    "resourceType": "Observation",
+    "id": "883bb812-ced6-9f57-46d3-7400f3a7565e",
+    "status": "final",
+    "category": [
+      {
+        "coding": [
+          {
+            "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+            "code": "vital-signs",
+            "display": "vital-signs"
+          }
+        ]
+      }
+    ],
+    "code": {
+      "coding": [
+        {
+          "system": "http://loinc.org",
+          "code": "8302-2",
+          "display": "Body Height"
+        }
+      ],
+      "text": "Body Height"
+    },
+    "subject": {
+      "reference": "urn:uuid:381074b9-3b23-7505-491b-1efc59da6ccb"
+    },
+    "encounter": {
+      "reference": "urn:uuid:3fda6565-de6b-12e2-8ffd-e0fcf9f874d2"
+    },
+    "effectiveDateTime": "2021-04-26T07:33:31-04:00",
+    "issued": "2021-04-26T07:33:31.395-04:00",
+    "valueQuantity": {
+      "value": 52.3,
+      "unit": "cm",
+      "system": "http://unitsofmeasure.org",
+      "code": "cm"
+    }
+  },
+  "request": {
+    "method": "POST",
+    "url": "Observation"
+  }
+}
