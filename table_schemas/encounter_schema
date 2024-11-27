@@ -1,19 +1,20 @@
 ENCOUNTER
-resource.resourceType = "Encounter"
-resource.id (encounter id)
-resource.status
-resource.class
+resource.resourceType = "Encounter" +
+resource.id (encounter id)  +
+resource.status +
+resource.class +
     system, code
-resource.type - array
+resource.type - array   +
     coding.system, coding.code, coding.display
-resource.subject
+    text
+resource.subject    +
     reference (urn:uuid:patient id), display (patient name)
-resource.participant - array (practitioners)
+resource.participant - array (practitioners)    +
     type.coding.system, type.coding.code, type.coding.display (type - array)
     period.start, period.end
     individual.reference, individual.name
-resource.period
+resource.period     +
     start, end
-resource.serviceProvider
+resource.serviceProvider    +
     reference, display
 
