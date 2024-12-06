@@ -5,6 +5,8 @@
 # 
 # We assume that the files are present in a Data Lake and would be stored in a Data Warehouse after the ETL. 
 #%%
+import sys
+
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import col, explode, expr
 
@@ -16,10 +18,10 @@ spark = SparkSession.builder \
 #%%
 
 # File path
-file_path = "data/fhir/samples"
+file_path = sys.argv[1]
 
 #Output path
-output_path = "etl"
+output_path = sys.argv[2]
 
 # Read the JSON file
 data = spark.read.json(file_path, multiLine=True)
