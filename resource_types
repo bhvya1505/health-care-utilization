@@ -1,0 +1,5 @@
+resource_types = [
+    "CarePlan", "CareTeam", "Claim", "Condition", "DiagnosticReport",
+    "Encounter", "ExplanationOfBenefit", "Immunization", "MedicationRequest",
+    "Observation", "Patient", "Procedure"
+]
