@@ -23,8 +23,8 @@ file_path = sys.argv[1]
 #Output path
 output_path = sys.argv[2]
 
-# Read the JSON file
-data = spark.read.json(file_path, multiLine=True)
+# Read the JSON file and repartition
+data = spark.read.json(file_path, multiLine=True).repartition(numPartitions=16)
 
 # Explode the entry array
 entries = data.select(explode(col("entry")).alias("entry"))
@@ -35,7 +35,6 @@ entries.cache()
 #%% md
 # ### Patient
 #%%
-
 # Filter patient resources
 patients = entries.filter(col("entry.resource.resourceType") == "Patient") \
                   .select(col("entry.resource.*"))
@@ -64,8 +63,7 @@ identifier_types = expr("""
 patient_df = patients.select(
     col("id").alias("patient_id"),
     identifier_types.alias("identifier_types"),
-    official_name.getField("family").alias("last_name"),
-    official_name.getField("given").getItem(0).alias("first_name"),
+    col("name").alias("name"),
     col("gender").alias("gender"),
     col("birthDate").alias("birth_date"),
     col("address").getItem(0).getField("city").alias("city"),
@@ -127,7 +125,7 @@ encounters_with_participants = encounters.select(
     col("id").alias("encounter_id"),
     col("status").alias("status"),
     col("class.code").alias("class_code"),
-    col("type_parsed").getItem(0).getField("text").alias("type_text"),
+    col("type_parsed").getItem(0).getField("text").alias("type_text"),  
     col("subject.reference").alias("patient_reference"),
     col("period.start").alias("start_time"),
     col("period.end").alias("end_time"),
@@ -212,7 +210,10 @@ medication_request_df = medication_requests_exploded.select(
     col("requester.display").alias("requester_display"),
     col("encounter.reference").alias("encounter_reference"),
     col("authoredOn").alias("authored_on"),
-    col("dosageInstruction.text").alias("dosage_text")
+    col("dosageInstruction.text").alias("dosage_text"),
+    # col("dosageInstruction.timing.repeat.frequency").alias("dosage_frequency"),
+    # col("dosageInstruction.timing.repeat.period").alias("dosage_period"),
+    # col("dosageInstruction.timing.repeat.periodUnit").alias("dosage_period_unit")
 )
 
 # Show the resulting DataFrame
@@ -386,13 +387,13 @@ careplan_df = careplans.select(
     col("id").alias("careplan_id"),
     col("status").alias("status"),
     col("intent").alias("intent"),
-    col("category").getItem(0).getField("text").alias("category_text"),
+    col("category").getItem(0).alias("category"),  
     col("subject.reference").alias("patient_reference"),
     col("encounter.reference").alias("encounter_reference"),
     col("period.start").alias("period_start"),
     col("period.end").alias("period_end"),
     col("created").alias("created_date"),
-    col("careTeam.reference").alias("care_team_reference"),
+    col("careTeam.reference").alias("care_team_reference"), 
     col("activity.detail.code.coding").getItem(0).getField("display").alias("activity_display"),
     col("activity.detail.code.coding").getItem(0).getField("code").alias("activity_code"),
     col("activity.detail.status").alias("activity_status"),
@@ -401,7 +402,7 @@ careplan_df = careplans.select(
 )
 
 # Since category is an array of string, separately process the column
-# careplan_df = careplan_df.withColumn("category_parsed", from_json(col("category"), category_schema)).withColumn("category_text", col("category_parsed.text"))
+careplan_df = careplan_df.withColumn("category_parsed", from_json(col("category"), category_schema)).withColumn("category_text", col("category_parsed.text"))
 
 # Dropping the redundant columns
 careplan_df = careplan_df.select(
@@ -493,7 +494,7 @@ diagnostic_reports = diagnostic_reports.withColumn("result", explode(col("result
 diagnostic_report_df = diagnostic_reports.select(
     col("id").alias("diagnostic_report_id"),
     col("status").alias("status"),
-    col("category").getItem(0).getField("coding").getItem(0).getField("display").alias("category_display"),
+    col("category").getItem(0).alias("category"),
     col("code.coding").getItem(0).getField("display").alias("code"),
     col("code.coding").getItem(0).getField("code").alias("code_system"),
     col("subject.reference").alias("subject_reference"),
@@ -503,7 +504,8 @@ diagnostic_report_df = diagnostic_reports.select(
     col("result.display").alias("result_display")
 )
 
-# diagnostic_report_df = diagnostic_report_df.withColumn("category_parsed", from_json(col("category"), category_schema)).withColumn("category_display", col("category_parsed.coding").getItem(0).getField("display"))
+diagnostic_report_df = diagnostic_report_df.withColumn("category_parsed", from_json(col("category"), category_schema)).withColumn("category_display", col("category_parsed.coding").getItem(0).getField("display"))
+
 diagnostic_report_df = diagnostic_report_df.select(
     [column for column in diagnostic_report_df.columns if column not in ["category", "category_parsed"]]
 )
@@ -552,7 +554,7 @@ observations = entries.filter(col("entry.resource.resourceType") == "Observation
 observation_df = observations.select(
     col("id").alias("observation_id"),
     col("status").alias("status"),
-    col("category").getItem(0).getField("coding").getItem(0).getField("display").alias("category_display"),
+    col("category").getItem(0).alias("category"),
     col("code.coding").getItem(0).getField("display").alias("observation_code_display"),
     col("code.coding").getItem(0).getField("code").alias("observation_code"),
     col("subject.reference").alias("subject_reference"),
@@ -564,7 +566,7 @@ observation_df = observations.select(
     
 )
 
-# observation_df = observation_df.withColumn("category_parsed", from_json(col("category"), category_schema)).withColumn("category_display", col("category_parsed.coding").getItem(0).getField("display"))
+observation_df = observation_df.withColumn("category_parsed", from_json(col("category"), category_schema)).withColumn("category_display", col("category_parsed.coding").getItem(0).getField("display"))
 
 observation_df = observation_df.select(
     [column for column in observation_df.columns if column not in ["category", "category_parsed"]]
