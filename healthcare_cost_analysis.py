@@ -19,7 +19,9 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 from pyspark.sql import functions as F
 import pandas as pd
-import os
+import sys
+import boto3
+import io
 
 # Initialize a Spark session
 spark = SparkSession.builder \
@@ -38,16 +40,14 @@ The code reads Parquet files located in the specified etl directory using Sparkâ
 
 """
 
+input = sys.argv[1]
+output = sys.argv[2]
+
 #File path to the Parquet file
-file_path = "etl"
+file_path = "data-warehouse/etl"  #"etl"
 
 # Define the output file path
-output_folder = "cost_analysis_output"
-
-# Check if the output folder exists, create it if not
-if not os.path.exists(output_folder):
-    os.makedirs(output_folder)
-    print(f"Created output folder: {output_folder}")
+output_folder = "data-warehouse/analysis/cost_analysis_output"   #"cost_analysis_output"
 
 
 # Read the Parquet file into a Spark DataFrame
@@ -70,7 +70,7 @@ The provided Spark code is designed to process and integrate healthcare datasets
 
 def select_patients_data(patient_df):
     return patient_df.select(
-        'patient_id', 'first_name', 'last_name','gender', 'birth_date'
+        'patient_id','gender', 'birth_date'
         )
 
 def select_claim_data(claim_df):
@@ -123,7 +123,7 @@ high_cost_encounters = claims_encounters_df.orderBy(F.desc('total_amount')).limi
 # Convert to Pandas for plotting
 high_cost_encounters_pd = high_cost_encounters.toPandas()
 
-output_file_path = os.path.join(output_folder, "top_10_high_cost_encounters.png")
+output_file_path = f"{output_folder}/top_10_high_cost_encounters.png"
 
 # Plot the top 10 high-cost encounters
 plt.figure(figsize=(12, 6))
@@ -133,7 +133,22 @@ plt.xlabel("Encounter Type")
 plt.ylabel("Claim Amount (USD)")
 plt.xticks(rotation=45)
 plt.tight_layout()
-plt.savefig(output_file_path)  # Save the plot as an image file
+#plt.savefig(output_file_path)  # Save the plot as an image file
+
+# Save the plot to an in-memory buffer
+buffer = io.BytesIO()
+plt.savefig(buffer, format="png")
+buffer.seek(0)  # Move to the beginning of the buffer
+
+# Upload the buffer to S3
+s3 = boto3.client("s3")
+bucket = "c732-health-care-utilization"
+key = "data-warehouse/analysis/cost_analysis_output/top_10_high_cost_encounters.png"
+
+s3.put_object(Bucket=bucket, Key=key, Body=buffer, ContentType="image/png")
+
+# Close the buffer
+buffer.close()
 plt.close()
 
 """### Total Cost per Encounters
@@ -157,7 +172,7 @@ encounter_cost_analysis = claims_encounters_df.groupBy("type_text").agg(
 # Convert to Pandas DataFrame for plotting
 encounter_cost_analysis_pd = encounter_cost_analysis.toPandas()
 
-output_file_path = os.path.join(output_folder, "total_cost_of_encounters.png")
+output_file_path = f"{output_folder}/total_cost_of_encounters.png"
 
 # Plot the results
 plt.figure(figsize=(12, 6))
@@ -167,7 +182,21 @@ plt.xlabel("Encounters Type")
 plt.ylabel("Average Cost (USD)")
 plt.xticks(rotation=45)
 plt.tight_layout()
-plt.savefig(output_file_path)  # Save the plot as an image file
+#plt.savefig(output_file_path)  # Save the plot as an image file
+# Save the plot to an in-memory buffer
+buffer = io.BytesIO()
+plt.savefig(buffer, format="png")
+buffer.seek(0)  # Move to the beginning of the buffer
+
+# Upload the buffer to S3
+s3 = boto3.client("s3")
+bucket = "c732-health-care-utilization"
+key = output_file_path
+
+s3.put_object(Bucket=bucket, Key=key, Body=buffer, ContentType="image/png")
+
+# Close the buffer
+buffer.close()
 plt.close()
 
 """### Cost analysis based on service providers
@@ -205,7 +234,7 @@ provider_analysis = claims_encounters_df.groupby("service_provider_display").agg
 # Convert to Pandas DataFrame for plotting
 provider_analysis_pd = provider_analysis.toPandas()
 
-output_file_path = os.path.join(output_folder, "cost_by_service_providers.png")
+output_file_path = f"{output_folder}/cost_by_service_providers.png"
 
 plt.figure(figsize=(12, 6))
 sns.barplot(data=provider_analysis_pd, x="service_provider_display", y="total_cost")
@@ -213,7 +242,21 @@ plt.title("Total Cost by Service Provider")
 plt.xlabel("Service Provider")
 plt.ylabel("Total Cost (USD)")
 plt.xticks(rotation=45)
-plt.savefig(output_file_path)  # Save the plot as an image file
+#plt.savefig(output_file_path)  # Save the plot as an image file
+# Save the plot to an in-memory buffer
+buffer = io.BytesIO()
+plt.savefig(buffer, format="png")
+buffer.seek(0)  # Move to the beginning of the buffer
+
+# Upload the buffer to S3
+s3 = boto3.client("s3")
+bucket = "c732-health-care-utilization"
+key = output_file_path
+
+s3.put_object(Bucket=bucket, Key=key, Body=buffer, ContentType="image/png")
+
+# Close the buffer
+buffer.close()
 plt.close()
 
 """### Gender based cost analysis
@@ -254,7 +297,7 @@ cost_stats = (
 # Display the results
 #print("Total Costs by Gender")
 #print(cost_stats)
-output_file_path = os.path.join(output_folder, "gender_based_cost_analysis.png")
+output_file_path = f"{output_folder}/gender_based_cost_analysis.png"
 
 # Plot pie chart for total costs by gender
 plt.figure(figsize=(6, 6))
@@ -266,7 +309,21 @@ plt.pie(
 )
 plt.title("Gender Based Cost Analysis")
 plt.tight_layout()
-plt.savefig(output_file_path)  # Save the plot as an image file
+#plt.savefig(output_file_path)  # Save the plot as an image file
+# Save the plot to an in-memory buffer
+buffer = io.BytesIO()
+plt.savefig(buffer, format="png")
+buffer.seek(0)  # Move to the beginning of the buffer
+
+# Upload the buffer to S3
+s3 = boto3.client("s3")
+bucket = "c732-health-care-utilization"
+key = output_file_path
+
+s3.put_object(Bucket=bucket, Key=key, Body=buffer, ContentType="image/png")
+
+# Close the buffer
+buffer.close()
 plt.close()
 
 """### Age based cost analysis
@@ -311,7 +368,7 @@ age_cost_stats = (
 # Display the results
 #print("Age-Based Cost Analysis")
 #print(age_cost_stats)
-output_file_path = os.path.join(output_folder, "age_based_cost_analysis.png")
+output_file_path = f"{output_folder}/age_based_cost_analysis.png"
 
 # Bar chart for total costs by age range
 plt.figure(figsize=(10, 6))
@@ -319,7 +376,21 @@ plt.bar(age_cost_stats['age_range'], age_cost_stats['total_cost'])
 plt.title("Total Costs by Age Range")
 plt.xlabel("Age Range")
 plt.ylabel("Total Cost")
-plt.savefig(output_file_path)  # Save the plot as an image file
+#plt.savefig(output_file_path)  # Save the plot as an image file
+# Save the plot to an in-memory buffer
+buffer = io.BytesIO()
+plt.savefig(buffer, format="png")
+buffer.seek(0)  # Move to the beginning of the buffer
+
+# Upload the buffer to S3
+s3 = boto3.client("s3")
+bucket = "c732-health-care-utilization"
+key = output_file_path
+
+s3.put_object(Bucket=bucket, Key=key, Body=buffer, ContentType="image/png")
+
+# Close the buffer
+buffer.close()
 plt.close()
 
 """### Cost Analysis by Procedures
@@ -349,7 +420,7 @@ procedure_cost_analysis_pd = (
     procedure_cost_analysis.orderBy(F.desc("total_cost")).limit(10).toPandas()
 )
 
-output_file_path = os.path.join(output_folder, "top_10_procedures_based_on_total_amount.png")
+output_file_path = f"{output_folder}/top_10_procedures_based_on_total_amount.png"
 # Visualization: Total cost by procedure
 plt.figure(figsize=(12, 6))
 sns.barplot(data=procedure_cost_analysis_pd, x="procedure_code_display", y="total_cost")
@@ -358,11 +429,25 @@ plt.xlabel("Procedures")
 plt.ylabel("Total Cost (USD)")
 plt.xticks(rotation=45)
 plt.tight_layout()
-plt.savefig(output_file_path)  # Save the plot as an image file
+#plt.savefig(output_file_path)  # Save the plot as an image file
+# Save the plot to an in-memory buffer
+buffer = io.BytesIO()
+plt.savefig(buffer, format="png")
+buffer.seek(0)  # Move to the beginning of the buffer
+
+# Upload the buffer to S3
+s3 = boto3.client("s3")
+bucket = "c732-health-care-utilization"
+key = output_file_path
+
+s3.put_object(Bucket=bucket, Key=key, Body=buffer, ContentType="image/png")
+
+# Close the buffer
+buffer.close()
 plt.close()
 
 # Visualization: Frequency of procedures
-output_file_path = os.path.join(output_folder, "top_10_procedures_based_on_crequency.png")
+output_file_path = f"{output_folder}/top_10_procedures_based_on_crequency.png"
 plt.figure(figsize=(12, 6))
 sns.barplot(data=procedure_cost_analysis_pd, x="procedure_code_display", y="frequency")
 plt.title("Frequency of Procedures (Top 10)")
@@ -370,11 +455,25 @@ plt.xlabel("Procedures")
 plt.ylabel("Frequency")
 plt.xticks(rotation=45)
 plt.tight_layout()
-plt.savefig(output_file_path)  # Save the plot as an image file
+#plt.savefig(output_file_path)  # Save the plot as an image file
+# Save the plot to an in-memory buffer
+buffer = io.BytesIO()
+plt.savefig(buffer, format="png")
+buffer.seek(0)  # Move to the beginning of the buffer
+
+# Upload the buffer to S3
+s3 = boto3.client("s3")
+bucket = "c732-health-care-utilization"
+key = output_file_path
+
+s3.put_object(Bucket=bucket, Key=key, Body=buffer, ContentType="image/png")
+
+# Close the buffer
+buffer.close()
 plt.close()
 
 # Visualization: Average cost by procedure
-output_file_path = os.path.join(output_folder, "top_10_procedures_based_on_average_cost.png")
+output_file_path = f"{output_folder}/top_10_procedures_based_on_average_cost.png"
 plt.figure(figsize=(12, 6))
 sns.barplot(data=procedure_cost_analysis_pd, x="procedure_code_display", y="avg_cost")
 plt.title("Average Cost by Procedure Type (Top 10)")
@@ -382,5 +481,19 @@ plt.xlabel("Procedures")
 plt.ylabel("Average Cost (USD)")
 plt.xticks(rotation=45)
 plt.tight_layout()
-plt.savefig(output_file_path)  # Save the plot as an image file
+#plt.savefig(output_file_path)  # Save the plot as an image file
+# Save the plot to an in-memory buffer
+buffer = io.BytesIO()
+plt.savefig(buffer, format="png")
+buffer.seek(0)  # Move to the beginning of the buffer
+
+# Upload the buffer to S3
+s3 = boto3.client("s3")
+bucket = "c732-health-care-utilization"
+key = output_file_path
+
+s3.put_object(Bucket=bucket, Key=key, Body=buffer, ContentType="image/png")
+
+# Close the buffer
+buffer.close()
 plt.close()
