@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # coding: utf-8
+import sys
 
 # # Healthcare Disparities Analysis Based on Demographics!
 # 
@@ -27,8 +28,8 @@ import seaborn as sns
 
 input = sys.argv[1]
 s3 = boto3.client("s3")
-bucket = "c732-health-care-utilization"
-base_key = "data-warehouse/analysis/disparity_analysis_output/"
+bucket = sys.argv[2]
+base_key = sys.argv[3]
 #input = "etl"
 
 observation_df = spark.read.parquet(f"{input}/observation")
@@ -189,7 +190,7 @@ def upload_plot_to_s3(plt, plot_name):
     plt.savefig(buffer, format="png")
     buffer.seek(0)  
     
-    key = f"{base_key}{plot_name}.png"
+    key = f"{base_key}/{plot_name}.png"
     
     s3.put_object(Bucket=bucket, Key=key, Body=buffer, ContentType="image/png")
     
