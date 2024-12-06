@@ -413,7 +413,11 @@ class_code_age_group_avg_duration = filtered_encounter_patient_df.groupBy("class
     mean("encounter_duration").alias("avg_duration")
 ).orderBy("class_code", "age_group").toPandas()
 
-pivot_data = class_code_age_group_avg_duration.pivot("class_code", "age_group", "avg_duration").fillna(0)
+pivot_data = class_code_age_group_avg_duration.pivot(
+    index="class_code",  
+    columns="age_group",  
+    values="avg_duration"  
+).fillna(0)
 
 plt.figure(figsize=(12, 6))
 sns.heatmap(pivot_data, annot=True, cmap="coolwarm", fmt=".1f")
